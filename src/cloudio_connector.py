@@ -28,16 +28,18 @@ class TimeSeries:
 
 
 class CloudioConnector:
-    def __init__(self, host, user, password):
+    def __init__(self, host, user, password, max_points=10000):
         '''
         Initializer
         :param host: the cloudio host
         :param user: the cloudio user
         :param password: the cloudio password
+        :param max_points: the maximum number of points per GET
         '''
         self._user = user
         self._password = password
         self._host = host
+        self._max_points = max_points
 
     def get_uuid(self, friendly_name):
         '''
@@ -69,9 +71,7 @@ class CloudioConnector:
 
         finished = False
 
-        max_points = 10000
-
-        params = {"max": max_points}
+        params = {"max": self._max_points}
 
         start = time_serie.start
         stop = time_serie.stop
@@ -87,7 +87,7 @@ class CloudioConnector:
         while not finished:
             params['from'] = start.strftime(date_format)
 
-            total += max_points
+            total += self._max_points
 
             data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
 
@@ -114,7 +114,7 @@ class CloudioConnector:
             start = start + timedelta(seconds=1)
 
             # exit if list is empty
-            if len(data) < max_points:
+            if len(data) < self._max_points:
                 finished = True
 
         return result
