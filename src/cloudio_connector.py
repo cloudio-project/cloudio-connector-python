@@ -119,6 +119,25 @@ class CloudioConnector:
 
         return result
 
+    def get_last_value(self, attribute_id):
+        '''
+        Get the last value of an attribute
+        :param attribute_id: the attribute to get value from
+        :return: the last value
+        '''
+        url = self._host + "/api/v1/data/"
+        uuid = self.get_uuid(attribute_id.friendly_name)
+
+        url += uuid + '/' + attribute_id.node
+        for i in attribute_id.objects:
+            url += '/' + i
+        url += '/' + attribute_id.attribute
+
+        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
+
+        return data['value']
+
+
     def get_mean_value(self, attribute_id, period):
         '''
         Get the mean value of an attribute
