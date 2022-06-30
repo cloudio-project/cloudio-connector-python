@@ -29,35 +29,35 @@ class TimeSeries:
 
 class CloudioConnector:
     def __init__(self, host, user, password, max_points=10000):
-        '''
+        """
         Initializer
         :param host: the cloudio host
         :param user: the cloudio user
         :param password: the cloudio password
         :param max_points: the maximum number of points per GET
-        '''
+        """
         self._user = user
         self._password = password
         self._host = host
         self._max_points = max_points
 
     def get_uuid(self, friendly_name):
-        '''
+        """
         Get a UUID from a friendly name
-        @param friendly_name: the friendly name
-        @return: corresonding UUID
-        '''
+        :param friendly_name: the friendly name
+        :return: corresponding UUID
+        """
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
         return endpoint[0]['uuid']
 
     def get_time_series(self, time_series: TimeSeries):
-        '''
+        """
         Get the historical data of an attribute
-        @param time_series: the attribute and time series parameters
-        @return: the attribute historical data
-        '''
+        :param time_series: the attribute and time series parameters
+        :return: the attribute historical data
+        """
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         date_format_2 = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -120,11 +120,11 @@ class CloudioConnector:
         return result
 
     def get_last_value(self, attribute_id):
-        '''
+        """
         Get the last value of an attribute
         :param attribute_id: the attribute to get value from
         :return: the last value
-        '''
+        """
         url = self._host + "/api/v1/data/"
         uuid = self.get_uuid(attribute_id.friendly_name)
 
@@ -139,12 +139,12 @@ class CloudioConnector:
 
 
     def get_mean_value(self, attribute_id, period):
-        '''
+        """
         Get the mean value of an attribute
-        @param attribute_id: the attribute to get value from
-        @param period: the mean period
-        @return: the mean value
-        '''
+        :param attribute_id: the attribute to get value from
+        :param period: the mean period
+        :return: the mean value
+        """
         start = (datetime.utcnow() - timedelta(seconds=period))
         stop = datetime.utcnow()
 
@@ -160,12 +160,12 @@ class CloudioConnector:
         return res / count
 
     def data_frame(self, data, serie_name='value'):
-        '''
+        """
         Convert a Cloud.iO time series data to panda data frame
-        @param data: the cloudio data to convert
-        @param serie_name: the name of the panda data frame serie
-        @return: the panda data frame
-        '''
+        :param data: the cloudio data to convert
+        :param serie_name: the name of the panda data frame serie
+        :return: the panda data frame
+        """
         index = []
         values = []
 
@@ -176,12 +176,12 @@ class CloudioConnector:
         return pd.DataFrame(data=values, index=pd.to_datetime(index), columns=[serie_name])
 
     def get_multiple_time_series(self, series: List[TimeSeries], no_workers=5):
-        '''
+        """
         Get multiple time series in parallel using multi threading
-        @param series: the time series to get
-        @param no_workers: the number of workers
-        @return: the time series
-        '''
+        :param series: the time series to get
+        :param no_workers: the number of workers
+        :return: the time series
+        """
         class Worker(Thread):
             def __init__(self, serie_queue, cloudio_connector: CloudioConnector):
                 Thread.__init__(self)
