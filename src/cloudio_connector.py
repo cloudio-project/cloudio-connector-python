@@ -52,34 +52,34 @@ class CloudioConnector:
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
         return endpoint[0]['uuid']
 
-    def get_time_serie(self, time_serie: TimeSeries):
+    def get_time_series(self, time_series: TimeSeries):
         '''
         Get the historical data of an attribute
-        @param time_serie: the attribute and time serie parameters
+        @param time_series: the attribute and time series parameters
         @return: the attribute historical data
         '''
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         date_format_2 = "%Y-%m-%dT%H:%M:%SZ"
 
         url = self._host + "/api/v1/history/"
-        uuid = self.get_uuid(time_serie.attribute_id.friendly_name)
+        uuid = self.get_uuid(time_series.attribute_id.friendly_name)
 
-        url += uuid + '/' + time_serie.attribute_id.node
-        for i in time_serie.attribute_id.objects:
+        url += uuid + '/' + time_series.attribute_id.node
+        for i in time_series.attribute_id.objects:
             url += '/' + i
-        url += '/' + time_serie.attribute_id.attribute
+        url += '/' + time_series.attribute_id.attribute
 
         finished = False
 
         params = {"max": self._max_points}
 
-        start = time_serie.start
-        stop = time_serie.stop
+        start = time_series.start
+        stop = time_series.stop
 
         total = 0
 
-        if time_serie.resample is not None:
-            params["resampleInterval"] = time_serie.resample
+        if time_series.resample is not None:
+            params["resampleInterval"] = time_series.resample
 
         result = list()
 
@@ -129,7 +129,7 @@ class CloudioConnector:
         start = (datetime.utcnow() - timedelta(seconds=period))
         stop = datetime.utcnow()
 
-        data = self.get_time_serie(TimeSeries(attribute_id, start, stop))
+        data = self.get_time_series(TimeSeries(attribute_id, start, stop))
 
         res = 0
         count = 0
@@ -142,7 +142,7 @@ class CloudioConnector:
 
     def data_frame(self, data, serie_name='value'):
         '''
-        Convert a Cloud.iO time serie data to panda data frame
+        Convert a Cloud.iO time series data to panda data frame
         @param data: the cloudio data to convert
         @param serie_name: the name of the panda data frame serie
         @return: the panda data frame
@@ -176,7 +176,7 @@ class CloudioConnector:
                     if content == "":
                         break
                     serie_id = str(content.attribute_id)
-                    response = self.cc.get_time_serie(time_serie=content)
+                    response = self.cc.get_time_series(time_series=content)
                     self.results[serie_id] = response
                     self.queue.task_done()
 
