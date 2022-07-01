@@ -11,6 +11,11 @@ class Tester(AttributeListener):
         attr = AttributeId(uuid=cc.get_uuid('myEndpoint'), node='node', objects=['object'], attribute='attr2')
         cc.subscribe_to_attribute(attr)
         cc.add_attribute_listener(self)
+        time.sleep(10)
+        cc.unsubsribe_from_attribute(attr)
+        time.sleep(10)
+        cc.remove_attribute_listener(self)
+        print('end')
 
     def attribute_has_changed(self, attribute: AttributeId, value):
         print(str(attribute) + " " + str(value))
