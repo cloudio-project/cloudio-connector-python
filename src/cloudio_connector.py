@@ -1,5 +1,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
+from requests.models import PreparedRequest
 from datetime import datetime, timedelta
 from typing import List
 from dataclasses import dataclass
@@ -137,7 +138,6 @@ class CloudioConnector:
 
         return data['value']
 
-
     def get_mean_value(self, attribute_id, period):
         """
         Get the mean value of an attribute
@@ -158,6 +158,23 @@ class CloudioConnector:
             count += 1
 
         return res / count
+
+    def write_value(self, attribute_id, value):
+        url = self._host + "/api/v1/data/"
+        uuid = self.get_uuid(attribute_id.friendly_name)
+
+        url += uuid + '/' + attribute_id.node
+        for i in attribute_id.objects:
+            url += '/' + i
+        url += '/' + attribute_id.attribute
+
+        param = {'value': value}
+
+        req = PreparedRequest()
+        req.prepare_url(url, param)
+        url = req.url
+
+        requests.put(url, auth=HTTPBasicAuth(self._user, self._password))
 
     def data_frame(self, data, serie_name='value'):
         """
@@ -182,6 +199,7 @@ class CloudioConnector:
         :param no_workers: the number of workers
         :return: the time series
         """
+
         class Worker(Thread):
             def __init__(self, serie_queue, cloudio_connector: CloudioConnector):
                 Thread.__init__(self)
