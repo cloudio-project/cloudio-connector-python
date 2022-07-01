@@ -325,3 +325,5 @@ class CloudioConnector:
                                 listener.attribute_has_changed(a, data['value']['value'])
                     if self._observed_attributes_updated:
                         break
+
+            self._sse_client.close()
