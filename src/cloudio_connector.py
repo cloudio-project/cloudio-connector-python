@@ -60,7 +60,7 @@ class CloudioConnector:
         :return: the corresponding friendly name
         """
         url = self._host + "/api/v1/endpoints/" + uuid
-        endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
+        endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
         return endpoint['friendlyName']
 
     def get_time_series(self, time_series: TimeSeries):
