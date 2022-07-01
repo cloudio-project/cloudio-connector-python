@@ -11,13 +11,13 @@ import queue
 
 @dataclass()
 class AttributeId:
-    friendly_name: str
+    uuid: str
     node: str
     objects: List[str]
     attribute: str
 
     def __str__(self):
-        return self.friendly_name + '/' + self.node + '/' + '/'.join(self.objects) + '/' + self.attribute
+        return self.uuid + '/' + self.node + '/' + '/'.join(self.objects) + '/' + self.attribute
 
 
 @dataclass()
@@ -72,13 +72,7 @@ class CloudioConnector:
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         date_format_2 = "%Y-%m-%dT%H:%M:%SZ"
 
-        url = self._host + "/api/v1/history/"
-        uuid = self.get_uuid(time_series.attribute_id.friendly_name)
-
-        url += uuid + '/' + time_series.attribute_id.node
-        for i in time_series.attribute_id.objects:
-            url += '/' + i
-        url += '/' + time_series.attribute_id.attribute
+        url = self._host + "/api/v1/history/" + str(time_series.attribute_id)
 
         finished = False
 
@@ -136,13 +130,7 @@ class CloudioConnector:
         :param attribute_id: the attribute to get value from
         :return: the last value
         """
-        url = self._host + "/api/v1/data/"
-        uuid = self.get_uuid(attribute_id.friendly_name)
-
-        url += uuid + '/' + attribute_id.node
-        for i in attribute_id.objects:
-            url += '/' + i
-        url += '/' + attribute_id.attribute
+        url = self._host + "/api/v1/data/" + str(attribute_id)
 
         data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
 
@@ -176,13 +164,7 @@ class CloudioConnector:
         :param value: the value to write
         :return: None
         """
-        url = self._host + "/api/v1/data/"
-        uuid = self.get_uuid(attribute_id.friendly_name)
-
-        url += uuid + '/' + attribute_id.node
-        for i in attribute_id.objects:
-            url += '/' + i
-        url += '/' + attribute_id.attribute
+        url = self._host + "/api/v1/data/" + str(attribute_id)
 
         param = {'value': value}
 
