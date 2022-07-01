@@ -279,20 +279,12 @@ class CloudioConnector:
         """
         self._attribute_listeners.remove(listener)
 
-    def subscribe_to_attribute(self, attribute):
+    def subscribe_to_attributes(self, attributes):
         """
-        subscribe to an attribute changes
+        subscribe to an attribute list
         :param attribute: the attribute
         """
-        self._observed_attributes.append(attribute)
-        self._observed_attributes_updated = True
-
-    def unsubsribe_from_attribute(self, attribute):
-        """
-        unsubscribe from an attribute changes
-        :param attribute: the attribute
-        """
-        self._observed_attributes.remove(attribute)
+        self._observed_attributes = attributes
         self._observed_attributes_updated = True
 
     def _get_events(self):
