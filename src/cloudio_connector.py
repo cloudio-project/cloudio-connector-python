@@ -2,11 +2,16 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.models import PreparedRequest
 from datetime import datetime, timedelta
+import time
 from typing import List
 from dataclasses import dataclass
 from threading import Thread
 import pandas as pd
 import queue
+import sseclient
+import json
+
+from abc import ABCMeta, abstractmethod
 
 
 @dataclass()
@@ -28,6 +33,20 @@ class TimeSeries:
     resample: str = None
 
 
+class AttributeListener(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def attribute_has_changed(self, attribute: AttributeId, value):
+        """
+        Method called when an subscribed attribute has changed
+        :param attribute: the AttributeId
+        :param value: the new value
+        :return: None
+        """
+        pass
+
+
 class CloudioConnector:
     def __init__(self, host, user, password, max_points=10000):
         """
@@ -41,6 +60,12 @@ class CloudioConnector:
         self._password = password
         self._host = host
         self._max_points = max_points
+        self._sse_client: sseclient.SSEClient
+        self._observed_attributes: List[AttributeId] = list()
+        self._attribute_listeners: List[AttributeListener] = list()
+        self._observed_attributes_updated = False
+
+        Thread(target=self._get_events).start()
 
     def get_uuid(self, friendly_name):
         """
@@ -239,3 +264,64 @@ class CloudioConnector:
         for worker in workers:
             r = {**r, **worker.results}
         return r
+
+    def add_attribute_listener(self, listener: AttributeListener):
+        """
+        Add an attribute listener
+        :param listener: the listener
+        """
+        self._attribute_listeners.append(listener)
+
+    def remove_attribute_listener(self, listener: AttributeListener):
+        """
+        remove an attribute listener
+        :param listener: the listener
+        """
+        self._attribute_listeners.remove(listener)
+
+    def subscribe_to_attribute(self, attribute):
+        """
+        subscribe to an attribute changes
+        :param attribute: the attribute
+        """
+        self._observed_attributes.append(attribute)
+        self._observed_attributes_updated = True
+
+    def unsubsribe_from_attribute(self, attribute):
+        """
+        unsubscribe from an attribute changes
+        :param attribute: the attribute
+        """
+        self._observed_attributes.remove(attribute)
+        self._observed_attributes_updated = True
+
+    def _get_events(self):
+        """
+        method used internally to catch attributes changes
+        """
+        while True:
+            while len(self._observed_attributes) == 0:
+                time.sleep(0.1)  # let other threads work
+
+            self._observed_attributes_updated = False
+
+            while not self._observed_attributes_updated:
+                url = self._host + '/api/v1/data/subscribe'
+                headers = {'Content-type': 'application/json'}
+                body = json.dumps(list(map(str, self._observed_attributes)))
+                response = requests.post(url=url, headers=headers, data=body, stream=True,
+                                         auth=HTTPBasicAuth(self._user, self._password))
+
+                if response.status_code != 200:
+                    time.sleep(10.0)  # to be sure to not spam the server
+
+                self._sse_client = sseclient.SSEClient(response)
+
+                for event in self._sse_client.events():
+                    data = json.loads(event.data)
+                    for a in self._observed_attributes:
+                        if str(a) == data['id']:
+                            for listener in self._attribute_listeners:
+                                listener.attribute_has_changed(a, data['value']['value'])
+                    if self._observed_attributes_updated:
+                        break
