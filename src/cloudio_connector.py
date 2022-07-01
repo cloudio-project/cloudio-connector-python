@@ -160,6 +160,12 @@ class CloudioConnector:
         return res / count
 
     def write_value(self, attribute_id, value):
+        """
+        Write an attribute
+        :param attribute_id: the attribute to write
+        :param value: the value to write
+        :return: None
+        """
         url = self._host + "/api/v1/data/"
         uuid = self.get_uuid(attribute_id.friendly_name)
 
