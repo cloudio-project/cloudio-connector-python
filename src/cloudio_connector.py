@@ -53,6 +53,16 @@ class CloudioConnector:
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
         return endpoint[0]['uuid']
 
+    def get_friendly_name(self, uuid):
+        """
+        Get a friendly name from a uuid
+        :param uuid: the uuid
+        :return: the corresponding friendly name
+        """
+        url = self._host + "/api/v1/endpoints/" + uuid
+        endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
+        return endpoint['friendlyName']
+
     def get_time_series(self, time_series: TimeSeries):
         """
         Get the historical data of an attribute
