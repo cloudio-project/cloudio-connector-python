@@ -362,7 +362,10 @@ class CloudioConnector:
             self._mqtt_client.unsubscribe(topic=self._attr_to_topic(i))
 
     def _topic_to_attribute(self, topic: str):
-        topic = topic.split('@update/').pop(-1)
+        if '@update' in topic:
+            topic = topic.split('@update/').pop(-1)
+        if '@set' in topic:
+            topic = topic.split('@set/').pop(-1)
         if self._get_topic_version(topic.split('/').pop(0)) == "v0.1":
             topic = topic.replace('nodes/', '')
             topic = topic.replace('objects/', '')
@@ -372,11 +375,26 @@ class CloudioConnector:
     def _get_topic_version(self, uuid):
         return self.get_endpoint_structure(uuid)['version']
 
-    def _attr_to_topic(self, attribute: AttributeId):
-        if self._get_topic_version(attribute.uuid) == "v0.2":
-            return '@update/' + str(attribute)
+    def _get_attr_action(self, attribute: AttributeId):
+        data = self.get_endpoint_structure(attribute.uuid)
+        node = data['nodes'][attribute.node]
+        obj = node
+        for i in range(0, len(attribute.objects)):
+            obj = obj['objects'][attribute.objects[i]]
+
+        attr = obj['attributes'][attribute.attribute]
+
+        if attr['constraint'] == 'SetPoint' or attr['constraint'] == 'Parameter':
+            return 'set'
         else:
-            return '@update/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
+            return 'update'
+
+    def _attr_to_topic(self, attribute: AttributeId):
+
+        if self._get_topic_version(attribute.uuid) == "v0.2":
+            return '@' + self._get_attr_action(attribute) + '/' + str(attribute)
+        else:
+            return '@' + self._get_attr_action(attribute) + '/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
                    '/'.join(attribute.objects) + '/attributes/' + attribute.attribute
 
     def _get_ca_cert(self):
