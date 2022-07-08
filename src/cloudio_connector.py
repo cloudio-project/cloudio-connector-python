@@ -80,7 +80,7 @@ class CloudioConnector:
         """
         for i in self._endpoint_data.keys():
             if 'friendlyName' in self._endpoint_data[i]:
-                return self._endpoint_data[i]['friendlyName']
+                return i
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
