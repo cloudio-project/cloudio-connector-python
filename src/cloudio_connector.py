@@ -355,7 +355,6 @@ class CloudioConnector:
             i.attribute_has_changed(self._topic_to_attribute(msg.topic), data)
 
     def _on_connect(self, client, userdata, flags, rc):
-        print("Connected to mqtt broker")
         for i in self._subscribed_attributes:
             self._mqtt_client.subscribe(topic=self._attr_to_topic(i))
         for i in self._unsubscribed_attributes:
@@ -366,7 +365,7 @@ class CloudioConnector:
             topic = topic.split('@update/').pop(-1)
         if '@set' in topic:
             topic = topic.split('@set/').pop(-1)
-        if self._get_topic_version(topic.split('/').pop(0)) == "v0.1":
+        if self._get_topic_version(topic.split('/').pop(0)) != "v0.2":
             topic = topic.replace('nodes/', '')
             topic = topic.replace('objects/', '')
             topic = topic.replace('attributes/', '')
@@ -405,6 +404,11 @@ class CloudioConnector:
         return data.text
 
     def str_to_attribute(self, string: str):
+        """
+        Converts a str to AttributeId
+        :param string: the string to convert
+        :return: the attribute id
+        """
         sep = string.split('/')
         uuid = sep.pop(0)
         node = sep.pop(0)
