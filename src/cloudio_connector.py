@@ -2,14 +2,15 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.models import PreparedRequest
 from datetime import datetime, timedelta
-import time
+from cbor import cbor
 from typing import List
 from dataclasses import dataclass
 from threading import Thread
 import pandas as pd
 import queue
-import sseclient
+from paho.mqtt import client as mqtt_client
 import json
+import collections
 
 from abc import ABCMeta, abstractmethod
 
@@ -60,12 +61,16 @@ class CloudioConnector:
         self._password = password
         self._host = host
         self._max_points = max_points
-        self._sse_client: sseclient.SSEClient
         self._observed_attributes: List[AttributeId] = list()
         self._attribute_listeners: List[AttributeListener] = list()
         self._observed_attributes_updated = False
-
-        Thread(target=self._get_events).start()
+        self._mqtt_client = mqtt_client.Client()
+        self._mqtt_client.on_message = self._on_message
+        self._mqtt_client.on_connect = self._on_connect
+        self._mqtt_connect_thread = Thread(target=self._mqtt_connect)
+        self._subscribed_attributes = list()
+        self._unsubscribed_attributes = list()
+        self._endpoint_data = collections.defaultdict(dict)
 
     def get_uuid(self, friendly_name):
         """
@@ -73,10 +78,28 @@ class CloudioConnector:
         :param friendly_name: the friendly name
         :return: corresponding UUID
         """
+        for i in self._endpoint_data.keys():
+            if 'friendlyName' in self._endpoint_data[i]:
+                return self._endpoint_data[i]['friendlyName']
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
+        self._endpoint_data[endpoint[0]['uuid']]['friendlyName'] = friendly_name
         return endpoint[0]['uuid']
+
+    def get_endpoint_structure(self, uuid):
+        """
+        Get the structure of an endpoint
+        :param uuid: the endpoint to get structure from
+        :return: the endpoint structure
+        """
+        if uuid in self._endpoint_data.keys():
+            if 'structure' in self._endpoint_data[uuid]:
+                return self._endpoint_data[uuid]['structure']
+        url = self._host + "/api/v1/data/" + str(uuid)
+        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
+        self._endpoint_data[uuid]['structure'] = data
+        return data
 
     def get_friendly_name(self, uuid):
         """
@@ -84,6 +107,9 @@ class CloudioConnector:
         :param uuid: the uuid
         :return: the corresponding friendly name
         """
+        if uuid in self._endpoint_data:
+            if 'friendlyName' in self._endpoint_data[uuid]:
+                return self._endpoint_data[uuid]['friendlyName']
         url = self._host + "/api/v1/endpoints/" + uuid
         endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
         return endpoint['friendlyName']
@@ -279,43 +305,90 @@ class CloudioConnector:
         """
         self._attribute_listeners.remove(listener)
 
-    def subscribe_to_attributes(self, attributes):
+    def subscribe_to_attribute(self, attribute):
         """
-        subscribe to an attribute list
+        subscribe to an attribute
         :param attribute: the attribute
         """
-        self._observed_attributes = attributes
-        self._observed_attributes_updated = True
+        if not self._mqtt_connect_thread.is_alive():
+            self._mqtt_connect_thread.start()
+        self._subscribed_attributes.append(attribute)
+        if self._mqtt_client.is_connected():
+            self._mqtt_client.subscribe(topic=self._attr_to_topic(attribute))
 
-    def _get_events(self):
+    def unsubscribe_from_attribute(self, attribute):
         """
-        method used internally to catch attributes changes
+        unsubscribe from an attribute
+        :param attribute: the attribute
         """
-        while True:
-            while len(self._observed_attributes) == 0:
-                time.sleep(0.1)  # let other threads work
+        self._unsubscribed_attributes.remove(attribute)
+        if self._mqtt_client.is_connected():
+            self._mqtt_client.unsubscribe(topic=self._attr_to_topic(attribute))
 
-            self._observed_attributes_updated = False
+    def _mqtt_connect(self):
+        ca_cert = self._get_ca_cert()
+        f = open("ca-cert.crt", "w")
+        f.write(str(ca_cert))
+        f.close()
 
-            while not self._observed_attributes_updated:
-                url = self._host + '/api/v1/data/subscribe'
-                headers = {'Content-type': 'application/json'}
-                body = json.dumps(list(map(str, self._observed_attributes)))
-                response = requests.post(url=url, headers=headers, data=body, stream=True,
-                                         auth=HTTPBasicAuth(self._user, self._password))
+        self._mqtt_client.tls_set(ca_certs="ca-cert.crt")
+        self._mqtt_client.tls_insecure_set(True)
+        self._mqtt_client.username_pw_set(self._user, self._password)
 
-                if response.status_code != 200:
-                    time.sleep(10.0)  # to be sure to not spam the server
+        self._mqtt_client.reconnect_delay_set(15, 15)
+        self._mqtt_client.connect(host=(self._host.split('://').pop(-1)).split(':').pop(0), port=8883)
+        self._mqtt_client.loop_forever()
 
-                self._sse_client = sseclient.SSEClient(response)
+    def _validate_json(self, data):
+        try:
+            json.loads(data)
+        except ValueError as err:
+            return False
+        return True
 
-                for event in self._sse_client.events():
-                    data = json.loads(event.data)
-                    for a in self._observed_attributes:
-                        if str(a) == data['id']:
-                            for listener in self._attribute_listeners:
-                                listener.attribute_has_changed(a, data['value']['value'])
-                    if self._observed_attributes_updated:
-                        break
+    def _on_message(self, client, userdata, msg):
+        if self._validate_json(msg.payload):
+            data = json.loads(msg.payload)
+        else:
+            data = cbor.loads(msg.payload)
+        for i in self._attribute_listeners:
+            i.attribute_has_changed(self._topic_to_attribute(msg.topic), data)
 
-            self._sse_client.close()
+    def _on_connect(self, client, userdata, flags, rc):
+        print("Connected to mqtt broker")
+        for i in self._subscribed_attributes:
+            self._mqtt_client.subscribe(topic=self._attr_to_topic(i))
+        for i in self._unsubscribed_attributes:
+            self._mqtt_client.unsubscribe(topic=self._attr_to_topic(i))
+
+    def _topic_to_attribute(self, topic: str):
+        topic = topic.split('@update/').pop(-1)
+        if self._get_topic_version(topic.split('/').pop(0)) == "v0.1":
+            topic = topic.replace('nodes/', '')
+            topic = topic.replace('objects/', '')
+            topic = topic.replace('attributes/', '')
+        return self.str_to_attribute(topic)
+
+    def _get_topic_version(self, uuid):
+        return self.get_endpoint_structure(uuid)['version']
+
+    def _attr_to_topic(self, attribute: AttributeId):
+        if self._get_topic_version(attribute.uuid) == "v0.2":
+            return '@update/' + str(attribute)
+        else:
+            return '@update/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
+                   '/'.join(attribute.objects) + '/attributes/' + attribute.attribute
+
+    def _get_ca_cert(self):
+        url = self._host + "/api/v1/ca-certificate"
+
+        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password))
+
+        return data.text
+
+    def str_to_attribute(self, string: str):
+        sep = string.split('/')
+        uuid = sep.pop(0)
+        node = sep.pop(0)
+        attr = sep.pop(-1)
+        return AttributeId(uuid, node, sep, attr)
