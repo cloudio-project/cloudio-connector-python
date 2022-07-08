@@ -1,6 +1,8 @@
 # cloudio-connector-python
 This library is a helper to create python cloudio applications.
 
+The cloudio project: http://cloudio.hevs.ch/
+
 Example:
 ```
 class Example(AttributeListener):
