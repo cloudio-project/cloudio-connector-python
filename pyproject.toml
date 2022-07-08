@@ -1,0 +1,23 @@
+# pyproject.toml
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudio-connector-python"
+version = "0.0.1"
+description = "Helper to create python cloudio applications"
+readme = "README.md"
+authors = [{ name = "Martin Meyer", email = "meyer.mart@outlook.com" }]
+license = { file = "LICENSE" }
+dependencies = [
+    "pandas",
+    "requests",
+    'cbor',
+    'paho-mqtt'
+]
+requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/cloudio-project/cloudio-connector-python"
