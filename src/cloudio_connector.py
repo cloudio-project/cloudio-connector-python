@@ -185,7 +185,7 @@ class CloudioConnector:
 
         data = self._get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
 
-        return data['value']
+        return data
 
     def get_mean_value(self, attribute_id, period):
         """
