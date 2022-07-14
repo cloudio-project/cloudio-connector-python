@@ -9,6 +9,7 @@ name = "cloudio-connector-python"
 version = "0.1.3"
 description = "Helper to create python cloudio applications"
 readme = "README.md"
+keywords = ["cloudio", "cloud.io", "application", "connector"]
 authors = [{ name = "Martin Meyer", email = "meyer.mart@outlook.com" }]
 license = { file = "LICENSE" }
 dependencies = [
