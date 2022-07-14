@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudio-connector-python"
-version = "0.1.0"
+version = "0.1.2"
 description = "Helper to create python cloudio applications"
 readme = "README.md"
 authors = [{ name = "Martin Meyer", email = "meyer.mart@outlook.com" }]

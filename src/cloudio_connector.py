@@ -83,7 +83,7 @@ class CloudioConnector:
                 return i
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
-        endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
+        endpoint = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
         self._endpoint_data[endpoint[0]['uuid']]['friendlyName'] = friendly_name
         return endpoint[0]['uuid']
 
@@ -97,7 +97,7 @@ class CloudioConnector:
             if 'structure' in self._endpoint_data[uuid]:
                 return self._endpoint_data[uuid]['structure']
         url = self._host + "/api/v1/data/" + str(uuid)
-        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
+        data = self._get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
         self._endpoint_data[uuid]['structure'] = data
         return data
 
@@ -111,7 +111,7 @@ class CloudioConnector:
             if 'friendlyName' in self._endpoint_data[uuid]:
                 return self._endpoint_data[uuid]['friendlyName']
         url = self._host + "/api/v1/endpoints/" + uuid
-        endpoint = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
+        endpoint = self._get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
         return endpoint['friendlyName']
 
     def get_time_series(self, time_series: TimeSeries):
@@ -145,7 +145,7 @@ class CloudioConnector:
 
             total += self._max_points
 
-            data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
+            data = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
 
             for i in data:
                 # get the datapoint time
@@ -183,7 +183,7 @@ class CloudioConnector:
         """
         url = self._host + "/api/v1/data/" + str(attribute_id)
 
-        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
+        data = self._get(url, auth=HTTPBasicAuth(self._user, self._password)).json()
 
         return data['value']
 
@@ -223,7 +223,7 @@ class CloudioConnector:
         req.prepare_url(url, param)
         url = req.url
 
-        requests.put(url, auth=HTTPBasicAuth(self._user, self._password))
+        self._put(url, auth=HTTPBasicAuth(self._user, self._password))
 
     def data_frame(self, data, serie_name='value'):
         """
@@ -393,13 +393,14 @@ class CloudioConnector:
         if self._get_topic_version(attribute.uuid) == "v0.2":
             return '@' + self._get_attr_action(attribute) + '/' + str(attribute)
         else:
-            return '@' + self._get_attr_action(attribute) + '/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
+            return '@' + self._get_attr_action(
+                attribute) + '/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
                    '/'.join(attribute.objects) + '/attributes/' + attribute.attribute
 
     def _get_ca_cert(self):
         url = self._host + "/api/v1/ca-certificate"
 
-        data = requests.get(url, auth=HTTPBasicAuth(self._user, self._password))
+        data = self._get(url, auth=HTTPBasicAuth(self._user, self._password))
 
         return data.text
 
@@ -414,3 +415,13 @@ class CloudioConnector:
         node = sep.pop(0)
         attr = sep.pop(-1)
         return AttributeId(uuid, node, sep, attr)
+
+    def _get(self, url, auth=None, params=None):
+        r = requests.get(url=url, auth=auth, params=params)
+        r.raise_for_status()
+        return r
+
+    def _put(self, url, auth=None, params=None):
+        r = requests.put(url=url, auth=auth, params=params)
+        r.raise_for_status()
+        return r
