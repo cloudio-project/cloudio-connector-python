@@ -6,7 +6,7 @@ The cloudio project: http://cloudio.hevs.ch/
 ## The cloud.iO three layers
 Cloud.iO is composed of 3 layers:
 
-<img src="https://github.com/cloudio-project/cloudio-connector-python/blob/develop/doc/images/three_layers.PNG" alt="drawing" width="200"/>
+![alt text](https://github.com/cloudio-project/cloudio-connector-python/blob/develop/doc/images/three_layers.PNG?raw=true)
 
 - The endpoints: distributed field devices that mainly measures and actuate things.
 - Cloudio services: the cloud.iO server that communicate with the endpoints, stores the data and provide a http rest api to the applications.
@@ -25,8 +25,10 @@ Here is a quick reminder of the cloud.iO data model:
 ```
 cc = CloudioConnector("https://example.com", "user", "password")
 
-sp = AttributeId(uuid='ba3d3ec2-23b6-45a8-827a-3b3133a69076', node='myNode', objects=['myObject'], attribute='mySetPoint')
-mea = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', objects=['myObject'], attribute='myMeasure')
+sp = AttributeId(uuid='ba3d3ec2-23b6-45a8-827a-3b3133a69076', node='myNode', 
+                    objects=['myObject'], attribute='mySetPoint')
+mea = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', 
+                    objects=['myObject'], attribute='myMeasure')
 
 # get the last value of an attribute
 last_val = cc.get_last_value(mea)
@@ -43,11 +45,15 @@ cc.write_value(sp, 1.0)
 ```
 cc = CloudioConnector("https://example.com", "user", "password")
 
-sp = AttributeId(uuid='ba3d3ec2-23b6-45a8-827a-3b3133a69076', node='myNode', objects=['myObject'], attribute='mySetPoint')
-mea = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', objects=['myObject'], attribute='myMeasure')
+sp = AttributeId(uuid='ba3d3ec2-23b6-45a8-827a-3b3133a69076', node='myNode', 
+                    objects=['myObject'], attribute='mySetPoint')
+mea = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', 
+                    objects=['myObject'], attribute='myMeasure')
 
-tm_mea = TimeSeries(mea, start=datetime.now() - datetime.timedelta(hours=24), stop=datetime.now(), resample='15m')
-tm_sp = TimeSeries(sp, start=datetime.now() - datetime.timedelta(hours=24), stop=datetime.now(), resample='15m')
+tm_mea = TimeSeries(mea, start=datetime.now() - datetime.timedelta(hours=24), 
+                    stop=datetime.now(), resample='15m')
+tm_sp = TimeSeries(sp, start=datetime.now() - datetime.timedelta(hours=24), 
+                    stop=datetime.now(), resample='15m')
 
 # get attribute time series
 data = cc.get_time_series(tm_mea)
@@ -67,7 +73,8 @@ class Example(AttributeListener):
         cc = CloudioConnector("https://example.com", "user", "password")
         cc.add_attribute_listener(self)
 
-        attr = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', objects=['myObject'], attribute='myMeasure'),
+        attr = AttributeId(uuid=cc.get_uuid('demo'), node='myNode', 
+                            objects=['myObject'], attribute='myMeasure'),
         
         # subscribe to attribute on change event
         cc.subscribe_to_attribute(attr)
