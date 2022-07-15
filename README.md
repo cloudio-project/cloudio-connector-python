@@ -20,6 +20,13 @@ Here is a quick reminder of the cloud.iO data model:
 
 **Note: You can have objects in objects, that's why an object list is needed to create an AttributeId.**
 
+You can get the data model of an endpoint:
+```
+cc = CloudioConnector("https://example.com", "user", "password")
+
+sp = cc.get_endpoint_structure('ba3d3ec2-23b6-45a8-827a-3b3133a69076')   
+```
+
 ## Read/Write attributes
 ### Example
 ```

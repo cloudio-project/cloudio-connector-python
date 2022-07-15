@@ -394,8 +394,8 @@ class CloudioConnector:
             return '@' + self._get_attr_action(attribute) + '/' + str(attribute)
         else:
             return '@' + self._get_attr_action(
-                attribute) + '/' + attribute.uuid + '/nodes/' + attribute.node + '/objects/' + \
-                   '/'.join(attribute.objects) + '/attributes/' + attribute.attribute
+                attribute) + '/' + attribute.uuid + '/nodes/' + attribute.node + \
+                   '/objects'.join(attribute.objects) + '/attributes/' + attribute.attribute
 
     def _get_ca_cert(self):
         url = self._host + "/api/v1/ca-certificate"
