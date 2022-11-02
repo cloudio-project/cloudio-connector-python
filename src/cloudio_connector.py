@@ -71,6 +71,7 @@ class CloudioConnector:
         self._subscribed_attributes = list()
         self._unsubscribed_attributes = list()
         self._endpoint_data = collections.defaultdict(dict)
+        self._session = requests.Session()
 
     def get_uuid(self, friendly_name):
         """
@@ -139,37 +140,27 @@ class CloudioConnector:
 
         result = list()
 
-        # request 10000 datapoint per loop
         while not finished:
             params['from'] = start.strftime(date_format)
+            params['to'] = stop.strftime(date_format)
+            params['resampleFunction'] = 'MEAN'
 
             total += self._max_points
 
             data = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
 
-            for i in data:
-                # get the datapoint time
-                try:
-                    time = datetime.strptime(i['time'], date_format)
-                except ValueError:
-                    time = datetime.strptime(i['time'], date_format_2)
-
-                # check if stop time is reached
-                if time < stop:
-                    result.append(i)
-                else:
-                    finished = True
-
             # get the last datapoint time
             try:
-                start = datetime.strptime(data[-1]['time'], date_format)
+                last = datetime.strptime(data[-1]['time'], date_format)
             except ValueError:
-                start = datetime.strptime(data[-1]['time'], date_format_2)
+                last = datetime.strptime(data[-1]['time'], date_format_2)
 
             # add a second to the next start time
-            start = start + timedelta(seconds=1)
+            start = last + timedelta(seconds=1)
 
-            # exit if list is empty
+            result.extend(data)
+
+            # exit if list count is lower than max points
             if len(data) < self._max_points:
                 finished = True
 
@@ -417,11 +408,11 @@ class CloudioConnector:
         return AttributeId(uuid, node, sep, attr)
 
     def _get(self, url, auth=None, params=None):
-        r = requests.get(url=url, auth=auth, params=params)
+        r = self._session.get(url=url, auth=auth, params=params)
         r.raise_for_status()
         return r
 
     def _put(self, url, auth=None, params=None):
-        r = requests.put(url=url, auth=auth, params=params)
+        r = self._session.put(url=url, auth=auth, params=params)
         r.raise_for_status()
         return r
