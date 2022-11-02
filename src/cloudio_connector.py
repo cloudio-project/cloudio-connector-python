@@ -81,7 +81,8 @@ class CloudioConnector:
         """
         for i in self._endpoint_data.keys():
             if 'friendlyName' in self._endpoint_data[i]:
-                return i
+                if self._endpoint_data[i]['friendlyName'] == friendly_name:
+                    return i
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
         endpoint = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
@@ -108,7 +109,7 @@ class CloudioConnector:
         :param uuid: the uuid
         :return: the corresponding friendly name
         """
-        if uuid in self._endpoint_data:
+        if uuid in self._endpoint_data.keys():
             if 'friendlyName' in self._endpoint_data[uuid]:
                 return self._endpoint_data[uuid]['friendlyName']
         url = self._host + "/api/v1/endpoints/" + uuid
