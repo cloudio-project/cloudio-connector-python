@@ -71,6 +71,7 @@ class CloudioConnector:
         self._subscribed_attributes = list()
         self._unsubscribed_attributes = list()
         self._endpoint_data = collections.defaultdict(dict)
+        self._session = requests.Session()
 
     def get_uuid(self, friendly_name):
         """
@@ -139,7 +140,6 @@ class CloudioConnector:
 
         result = list()
 
-        # request 10000 datapoint per loop
         while not finished:
             params['from'] = start.strftime(date_format)
             params['to'] = stop.strftime(date_format)
@@ -408,11 +408,11 @@ class CloudioConnector:
         return AttributeId(uuid, node, sep, attr)
 
     def _get(self, url, auth=None, params=None):
-        r = requests.get(url=url, auth=auth, params=params)
+        r = self._session.get(url=url, auth=auth, params=params)
         r.raise_for_status()
         return r
 
     def _put(self, url, auth=None, params=None):
-        r = requests.put(url=url, auth=auth, params=params)
+        r = self._session.put(url=url, auth=auth, params=params)
         r.raise_for_status()
         return r
