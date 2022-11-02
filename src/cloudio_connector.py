@@ -32,6 +32,7 @@ class TimeSeries:
     start: datetime
     stop: datetime
     resample: str = None
+    data = None
 
 
 class AttributeListener(object):
@@ -81,7 +82,8 @@ class CloudioConnector:
         """
         for i in self._endpoint_data.keys():
             if 'friendlyName' in self._endpoint_data[i]:
-                return i
+                if self._endpoint_data[i]['friendlyName'] == friendly_name:
+                    return i
         params = {'friendlyName': friendly_name}
         url = self._host + "/api/v1/endpoints"
         endpoint = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
@@ -108,7 +110,7 @@ class CloudioConnector:
         :param uuid: the uuid
         :return: the corresponding friendly name
         """
-        if uuid in self._endpoint_data:
+        if uuid in self._endpoint_data.keys():
             if 'friendlyName' in self._endpoint_data[uuid]:
                 return self._endpoint_data[uuid]['friendlyName']
         url = self._host + "/api/v1/endpoints/" + uuid
@@ -164,6 +166,7 @@ class CloudioConnector:
             if len(data) < self._max_points:
                 finished = True
 
+        time_series.data = result
         return result
 
     def get_last_value(self, attribute_id):
@@ -252,9 +255,7 @@ class CloudioConnector:
                     content = self.queue.get()
                     if content == "":
                         break
-                    serie_id = str(content.attribute_id)
-                    response = self.cc.get_time_series(time_series=content)
-                    self.results[serie_id] = response
+                    self.cc.get_time_series(time_series=content)
                     self.queue.task_done()
 
         # Create queue and add series
@@ -275,12 +276,6 @@ class CloudioConnector:
         # Join workers to wait till they finished
         for worker in workers:
             worker.join()
-
-        # Combine results from all workers
-        r = {}
-        for worker in workers:
-            r = {**r, **worker.results}
-        return r
 
     def add_attribute_listener(self, listener: AttributeListener):
         """
