@@ -32,6 +32,7 @@ class TimeSeries:
     start: datetime
     stop: datetime
     resample: str = None
+    data = None
 
 
 class AttributeListener(object):
@@ -165,6 +166,7 @@ class CloudioConnector:
             if len(data) < self._max_points:
                 finished = True
 
+        time_series.data = result
         return result
 
     def get_last_value(self, attribute_id):
@@ -253,9 +255,7 @@ class CloudioConnector:
                     content = self.queue.get()
                     if content == "":
                         break
-                    serie_id = str(content.attribute_id)
-                    response = self.cc.get_time_series(time_series=content)
-                    self.results[serie_id] = response
+                    self.cc.get_time_series(time_series=content)
                     self.queue.task_done()
 
         # Create queue and add series
@@ -276,12 +276,6 @@ class CloudioConnector:
         # Join workers to wait till they finished
         for worker in workers:
             worker.join()
-
-        # Combine results from all workers
-        r = {}
-        for worker in workers:
-            r = {**r, **worker.results}
-        return r
 
     def add_attribute_listener(self, listener: AttributeListener):
         """
