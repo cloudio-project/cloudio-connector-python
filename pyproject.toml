@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudio-connector-python"
-version = "0.1.4"
+version = "1.0.0"
 description = "Helper to create python cloudio applications"
 readme = "README.md"
 keywords = ["cloudio", "cloud.io", "application", "connector"]
