@@ -236,7 +236,7 @@ class CloudioConnector:
 
         return pd.DataFrame(data=values, index=pd.to_datetime(index), columns=[serie_name])
 
-    def get_multiple_time_series(self, series: List[TimeSeries], no_workers=5):
+    def get_multiple_time_series(self, series: List[TimeSeries], no_workers=None):
         """
         Get multiple time series in parallel using multi threading and write the result in the data attribute
         in TimeSeries objects
@@ -258,6 +258,9 @@ class CloudioConnector:
                         break
                     self.cc.get_time_series(time_series=content)
                     self.queue.task_done()
+
+        if no_workers is None:
+            no_workers = len(series)
 
         # Create queue and add series
         q = queue.Queue()
