@@ -119,7 +119,8 @@ class CloudioConnector:
 
     def get_time_series(self, time_series: TimeSeries):
         """
-        Get the historical data of an attribute
+        Get the historical data of an attribute and return/write the result in the data attribute
+        in TimeSeries objects
         :param time_series: the attribute and time series parameters
         :return: the attribute historical data
         """
@@ -237,10 +238,10 @@ class CloudioConnector:
 
     def get_multiple_time_series(self, series: List[TimeSeries], no_workers=5):
         """
-        Get multiple time series in parallel using multi threading
+        Get multiple time series in parallel using multi threading and write the result in the data attribute
+        in TimeSeries objects
         :param series: the time series to get
         :param no_workers: the number of workers
-        :return: the time series
         """
 
         class Worker(Thread):
