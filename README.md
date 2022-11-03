@@ -64,13 +64,15 @@ tm_sp = TimeSeries(sp, start=datetime.now() - datetime.timedelta(hours=24),
 
 # get attribute time series
 data = cc.get_time_series(tm_mea)
+# data is the same as tm_mea.data
 
 # convert cloudio time series to panda data frame
 cc.data_frame(data, serie_name="My Measure")
 
 # get multiple time series with multithreading
-data = cc.get_multiple_time_series([tm_mea, tm_sp])
-    
+cc.get_multiple_time_series([tm_mea, tm_sp])
+print(tm_mea.data)
+print(tm_sp.data)
 ```
 ## Get notified for attribute new value
 ### Example
