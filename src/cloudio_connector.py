@@ -220,21 +220,13 @@ class CloudioConnector:
 
         self._put(url, auth=HTTPBasicAuth(self._user, self._password))
 
-    def data_frame(self, data, serie_name='value'):
+    def data_frame(self, data):
         """
         Convert a Cloud.iO time series data to panda data frame
         :param data: the cloudio data to convert
-        :param serie_name: the name of the panda data frame serie
         :return: the panda data frame
         """
-        index = []
-        values = []
-
-        for i in data:
-            index.append(i['time'])
-            values.append(i['value'])
-
-        return pd.DataFrame(data=values, index=pd.to_datetime(index), columns=[serie_name])
+        return pd.DataFrame(data=data).set_index('time')
 
     def get_multiple_time_series(self, series: List[TimeSeries], no_workers=None):
         """
