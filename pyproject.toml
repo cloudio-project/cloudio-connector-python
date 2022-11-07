@@ -6,12 +6,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudio-connector-python"
-version = "1.2.0"
+version = "1.2.1"
 description = "Helper to create python cloudio applications"
 readme = "README.md"
 keywords = ["cloudio", "cloud.io", "application", "connector"]
-authors = [{ name = "Martin Meyer", email = "meyer.mart@outlook.com" },
-    { name = "Solène Cosandey", email = "solene.cosandey@hevs.ch" }]
+authors = [{ name = "Martin Meyer", email = "meyer.mart@outlook.com" }]
 license = { file = "LICENSE" }
 dependencies = [
     "pandas",
