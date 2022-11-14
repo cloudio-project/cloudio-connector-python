@@ -404,6 +404,6 @@ class CloudioConnector:
         return r
 
     def _put(self, url, auth=None, params=None):
-        r = self._session.put(url=url, auth=auth, params=params)
+        r = self._session.put(url=url, auth=auth, params=params, headers={'Content-Type': 'application/json'})
         r.raise_for_status()
         return r
