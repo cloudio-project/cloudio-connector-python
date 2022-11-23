@@ -152,16 +152,17 @@ class CloudioConnector:
 
             data = self._get(url, auth=HTTPBasicAuth(self._user, self._password), params=params).json()
 
-            # get the last datapoint time
-            try:
-                last = datetime.strptime(data[-1]['time'], date_format)
-            except ValueError:
-                last = datetime.strptime(data[-1]['time'], date_format_2)
+            if len(data) > 0:
+                # get the last datapoint time
+                try:
+                    last = datetime.strptime(data[-1]['time'], date_format)
+                except ValueError:
+                    last = datetime.strptime(data[-1]['time'], date_format_2)
 
-            # add a second to the next start time
-            start = last + timedelta(seconds=1)
+                # add a second to the next start time
+                start = last + timedelta(seconds=1)
 
-            result.extend(data)
+                result.extend(data)
 
             # exit if list count is lower than max points
             if len(data) < self._max_points:
@@ -200,6 +201,9 @@ class CloudioConnector:
         for dp in data:
             res += dp['value']
             count += 1
+
+        if count == 0:
+            return None
 
         return res / count
 
